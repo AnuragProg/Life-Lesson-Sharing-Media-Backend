@@ -18,6 +18,7 @@ func AddUserHandler(coll *mongo.Collection) gin.HandlerFunc{
 
 		if err != nil{
 			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Message: err.Error(), Response: ""})
+			return
 		}
 		c.JSON(http.StatusOK, models.GeneralResponse{Message:"Successfully added user"})	
 	}

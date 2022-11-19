@@ -47,20 +47,29 @@ func main(){
 	user := router.Group("/user", middlewares.AuthMiddleware)
 	{
 		userCollection := db.Collection("Users")
-		user.POST("/add", controllers.AddUserHandler(userCollection))
-		user.GET("/users", controllers.GetUsersHandler(userCollection))
-		user.PUT("/update", controllers.UpdateUserHandler(userCollection))
-		user.DELETE("/delete", controllers.DeleteUserHandler(userCollection))
+		user.POST("/", controllers.AddUserHandler(userCollection))
+		user.GET("/", controllers.GetUsersHandler(userCollection))
+		user.PUT("/", controllers.UpdateUserHandler(userCollection))
+		user.DELETE("/", controllers.DeleteUserHandler(userCollection))
 	}
 
 	pll := router.Group("/pll", middlewares.AuthMiddleware)
 	{
 		pllCollection := db.Collection("Pll")	
-		pll.POST("/add", controllers.AddPllHandler(pllCollection))
+		pll.POST("/", controllers.AddPllHandler(pllCollection))
 		pll.GET("/plls", controllers.GetPllsHandler(pllCollection))
 		pll.GET("/pll", controllers.GetPllHandler(pllCollection))
-		pll.PUT("/update", controllers.UpdatePllHandler(pllCollection))
-		pll.DELETE("/delete", controllers.DeletePllHandler(pllCollection))
+		pll.PUT("/", controllers.UpdatePllHandler(pllCollection))
+		pll.DELETE("/", controllers.DeletePllHandler(pllCollection))
+	}
+
+	comment := router.Group("/comment", middlewares.AuthMiddleware)
+	{
+		commentCollection := db.Collection("Comments")
+		comment.GET("/comments", controllers.GetCommentsHandler(commentCollection))
+		comment.POST("/", controllers.AddCommentHandler(commentCollection))
+		comment.DELETE("/", controllers.DeleteCommentHandler(commentCollection))
+		comment.PUT("/", controllers.UpdateCommentHandler(commentCollection))
 	}
 
 
