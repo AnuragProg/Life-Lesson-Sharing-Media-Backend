@@ -8,6 +8,7 @@ import(
 )
 
 type CommentRequest struct{
+	PllId string `json:"pllId" bson:"pllId"`
 	UserId string `json:"userId" bson:"userId"`
 	Username string `json:"username" bson:"username"`
 	Comment string `json:"comment" bson:"comment"`
@@ -17,13 +18,14 @@ type CommentRequest struct{
 
 type Comment struct{
 	ID string `json:"_id" bson:"_id"`
+	PllId string `json:"pllId" bson:"pllId"`
 	UserId string `json:"userId" bson:"userId"`
 	Username string `json:"username" bson:"username"`
 	Comment string `json:"comment" bson:"comment"`
 	CommentedOn uint32 `json:"commentedOn" bson:"commentedOn"`
 }
 
-func (comment *CommentRequest) AddComment(coll *mongo.Collection)(*mongo.InsertOneResult, error){
+func (comment *CommentRequest) addComment(coll *mongo.Collection)(*mongo.InsertOneResult, error){
 	return coll.InsertOne(context.TODO(), comment)	
 }
 
@@ -32,7 +34,7 @@ func (comment *Comment) UpdateComment(coll *mongo.Collection)(*mongo.UpdateResul
 	if err!=nil{
 		return nil, err
 	}
-	filter := bson.M{ "_id" : id, }
+	filter := bson.M{ "_id" : id }
 	update := bson.M{
 		"$set": bson.M{
 			"username":comment.Username,
@@ -52,7 +54,7 @@ func DeleteComment(commentId string, coll *mongo.Collection) (*mongo.DeleteResul
 	return coll.DeleteOne(context.TODO(), filter)
 }
 
-func GetComments(commentIds []string, coll *mongo.Collection) ([]Comment, error){
+func getComments(commentIds []string, coll *mongo.Collection) ([]Comment, error){
 	comments := make([]Comment, 0)
 
 	for _, commentId := range commentIds{

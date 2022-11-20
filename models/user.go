@@ -44,12 +44,15 @@ func (user *User) UpdateUser(coll *mongo.Collection) (*mongo.UpdateResult, error
 	return coll.UpdateOne(context.TODO(), filter, update)
 } 
 
-func DeleteUser(userId string, coll *mongo.Collection) (*mongo.DeleteResult, error){
+func DeleteUser(userId string, pllColl *mongo.Collection, commentColl *mongo.Collection) (*mongo.DeleteResult, error){
 	id , err:= primitive.ObjectIDFromHex(userId)
 	if err!=nil{
 		return nil, err
 	}
-	return coll.DeleteOne(context.TODO(), bson.M{"_id": id})	
+	filter := bson.M{"_id":id}
+
+	deletePllsAndCorrespondingCommentsOfUserId(userId, pllColl, commentColl)
+	return pllColl.DeleteOne(context.TODO(), filter)	
 }
 
 func GetUsers(coll *mongo.Collection) ([]User, error) {
@@ -60,4 +63,32 @@ func GetUsers(coll *mongo.Collection) ([]User, error) {
 	}
 	result := cursor.All(context.TODO(), &users)
 	return users, result
+}
+
+func GetUserById(userId string, coll *mongo.Collection)(*User, error){
+	id, err := primitive.ObjectIDFromHex(userId)
+	if err != nil{
+		return nil, err 
+	}
+	filter := bson.M{"_id":id}
+	result := coll.FindOne(context.TODO(), filter)
+
+	var user User
+	err = result.Decode(&user)
+	if err != nil{
+		return nil, err
+	}
+	return &user, nil
+}
+
+func GetUsersById(userIds []string, coll *mongo.Collection) ([]User, error) {
+	users := make([]User, 0)
+	for _, userId := range userIds{
+		user, err:= GetUserById(userId, coll)
+		if err != nil{
+			continue
+		}
+		users = append(users, *user)
+	}
+	return users, nil
 }
