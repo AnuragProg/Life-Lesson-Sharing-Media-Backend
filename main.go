@@ -15,8 +15,10 @@ import (
 
 
 func main(){
-	router := gin.Default()
+	parentRouter := gin.Default()
 	
+	router := parentRouter.Group("/v1")
+
 	if err := godotenv.Load(); err!=nil{
 		log.Fatal("Cannot find .env file!")
 	}
@@ -47,66 +49,41 @@ func main(){
 	userCollection := db.Collection("Users")
 	pllCollection := db.Collection("Pll")	
 	commentCollection := db.Collection("Comments")
+	categoryCollection := db.Collection("Categories")
 
 	user := router.Group("/user", middlewares.AuthMiddleware)
 	{
-
-		// *Working*
 		user.POST("/", controllers.AddUserHandler(userCollection))
-
-		// *Working*
 		user.GET("/", controllers.GetUsersHandler(userCollection))
-
-		// *Working* | Note: Giving error "message": "the provided hex string is not a valid ObjectID" => should instead give proper error of missing id
 		user.PATCH("/", controllers.UpdateUserHandler(userCollection))
-
-		// *Not working*
 		user.DELETE("/", controllers.DeleteUserHandler(userCollection, commentCollection))
 	}
 
 	pll := router.Group("/pll", middlewares.AuthMiddleware)
 	{
-		// *Working*
 		pll.GET("/plls", controllers.GetPllsHandler(pllCollection))
-
-		// *Working*
 		pll.GET("/pll", controllers.GetPllHandler(pllCollection))
-
-		// *Working*
 		pll.PATCH("/", controllers.UpdatePllHandler(pllCollection))
-
-		// *Working*
 		pll.POST("/", controllers.AddPllHandler(pllCollection))
-
-		//
-		pll.DELETE("/", controllers.DeletePllAndCommentsFromTableHandler(pllCollection, commentCollection))
-
-		// *Working*
-		pll.POST("/comment", controllers.AddCommentToTableAndListHandler(pllCollection,commentCollection))
-
-		// *Working*
-		pll.DELETE("/comment", controllers.DeleteCommentFromTableAndListHandler(pllCollection, commentCollection))
 	}
 
 	category := router.Group("/category", middlewares.AuthMiddleware)
 	{
-		categoryCollection := db.Collection("Categories")
-
-		// *Working*
-		category.GET("/", controllers.GetCategoriesHandler(categoryCollection))
-
-		// *Working*
+		category.GET("/categories", controllers.GetCategoriesHandler(categoryCollection))
 		category.GET("/category", controllers.GetCategoryHandler(categoryCollection))
-
-		// *Working*
 		category.POST("/", controllers.AddCategoryHandler(categoryCollection))
-
-		// *Working*
 		category.DELETE("/", controllers.DeleteCategoryHandler(categoryCollection))
-
-		// *Working*
 		category.PATCH("/", controllers.UpdateCategoryHandler(categoryCollection))
 	}
 
-	router.Run("localhost:5000")
+	comments := router.Group("/comment", middlewares.AuthMiddleware)
+	{
+		comments.GET("/", controllers.GetCommentsHandler(commentCollection))
+		comments.POST("/", controllers.AddCommentHandler(pllCollection,commentCollection))
+		comments.DELETE("/", controllers.DeleteCommentHandler(pllCollection,commentCollection))
+		comments.PATCH("/", controllers.UpdateCommentHandler(commentCollection))
+	}
+
+
+	parentRouter.Run("localhost:5000")
 }

@@ -50,13 +50,11 @@ func DeleteUser(userId string, pllColl *mongo.Collection, commentColl *mongo.Col
 		return nil, err
 	}
 	filter := bson.M{"_id":id}
-
-	deletePllsAndCorrespondingCommentsOfUserId(userId, pllColl, commentColl)
 	return pllColl.DeleteOne(context.TODO(), filter)	
 }
 
 func GetUsers(coll *mongo.Collection) ([]User, error) {
-	var users []User
+	var users []User = make([]User, 0)
 	cursor, err := coll.Find(context.TODO(), bson.D{})
 	if err !=nil{
 		return users, err 

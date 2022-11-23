@@ -1,9 +1,10 @@
 package controllers
 
-import(
+import (
 	"net/http"
 	"rest-api/models"
-	"github.com/gin-gonic/gin"	
+
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
