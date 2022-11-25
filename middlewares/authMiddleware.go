@@ -7,9 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"rest-api/models"
-
 	"golang.org/x/crypto/bcrypt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
@@ -23,7 +21,7 @@ note:
 	2. Hashing only takes place in Signing Up and Logging in using password
 */
 
-const COST = 20
+const COST = 5
 
 func GetBearerToken(c *gin.Context) (string, error){
 	tokenString := c.Request.Header.Get("Authorization")	
@@ -322,7 +320,7 @@ func AdminAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 			}
 
 			// Validating credentials of JWT token with credentails in db
-			if user.Email == email && user.Password == pass{
+			if user.Email != email || user.Password != pass{
 				c.JSON(http.StatusUnauthorized, models.ErrorResponse{Message:"credentials not valid due to incorrect password"})
 				c.Abort()
 				return
