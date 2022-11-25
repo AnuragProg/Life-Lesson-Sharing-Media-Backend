@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"rest-api/controllers"
@@ -51,15 +52,17 @@ func main(){
 	commentCollection := db.Collection("Comments")
 	categoryCollection := db.Collection("Categories")
 
-	user := router.Group("/user", middlewares.AuthMiddleware)
+	user := router.Group("/user")
 	{
-		user.POST("/", controllers.AddUserHandler(userCollection))
-		user.GET("/", controllers.GetUsersHandler(userCollection))
-		user.PATCH("/", controllers.UpdateUserHandler(userCollection))
-		user.DELETE("/", controllers.DeleteUserHandler(userCollection, commentCollection))
+		user.POST("/signUp", middlewares.SignUpUserHandler(userCollection))
+		user.POST("/signIn", middlewares.LoginUserWithTokenHandler(userCollection))
+		user.POST("/signInWithPassword", middlewares.LoginUserWithPasswordHandler(userCollection))
+		user.GET("/", middlewares.AdminAuthMiddlwareHandler(userCollection),controllers.GetUsersHandler(userCollection))
+		user.PATCH("/edit", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.UpdateUserHandler(userCollection))
+		user.DELETE("/", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.DeleteUserHandler(userCollection, commentCollection))
 	}
 
-	pll := router.Group("/pll", middlewares.AuthMiddleware)
+	pll := router.Group("/pll", middlewares.UserAuthMiddlwareHandler(userCollection))
 	{
 		pll.GET("/plls", controllers.GetPllsHandler(pllCollection))
 		pll.GET("/pll", controllers.GetPllHandler(pllCollection))
@@ -67,16 +70,16 @@ func main(){
 		pll.POST("/", controllers.AddPllHandler(pllCollection))
 	}
 
-	category := router.Group("/category", middlewares.AuthMiddleware)
+	category := router.Group("/category")
 	{
-		category.GET("/categories", controllers.GetCategoriesHandler(categoryCollection))
-		category.GET("/category", controllers.GetCategoryHandler(categoryCollection))
-		category.POST("/", controllers.AddCategoryHandler(categoryCollection))
-		category.DELETE("/", controllers.DeleteCategoryHandler(categoryCollection))
-		category.PATCH("/", controllers.UpdateCategoryHandler(categoryCollection))
+		category.GET("/categories",middlewares.UserAuthMiddlwareHandler(userCollection), controllers.GetCategoriesHandler(categoryCollection))
+		category.GET("/category", middlewares.UserAuthMiddlwareHandler(userCollection), controllers.GetCategoryHandler(categoryCollection))
+		category.POST("/", middlewares.AdminAuthMiddlwareHandler(userCollection),controllers.AddCategoryHandler(categoryCollection))
+		category.DELETE("/", middlewares.AdminAuthMiddlwareHandler(userCollection),controllers.DeleteCategoryHandler(categoryCollection))
+		category.PATCH("/", middlewares.AdminAuthMiddlwareHandler(userCollection),controllers.UpdateCategoryHandler(categoryCollection))
 	}
 
-	comments := router.Group("/comment", middlewares.AuthMiddleware)
+	comments := router.Group("/comment", middlewares.UserAuthMiddlwareHandler(userCollection))
 	{
 		comments.GET("/", controllers.GetCommentsHandler(commentCollection))
 		comments.POST("/", controllers.AddCommentHandler(pllCollection,commentCollection))
@@ -84,6 +87,8 @@ func main(){
 		comments.PATCH("/", controllers.UpdateCommentHandler(commentCollection))
 	}
 
+	port := 5000
+	addr := fmt.Sprintf("localhost:%v", port)
 
-	parentRouter.Run("localhost:5000")
+	parentRouter.Run(addr)
 }

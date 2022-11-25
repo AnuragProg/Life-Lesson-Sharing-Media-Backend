@@ -8,24 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func AddUserHandler(coll *mongo.Collection) gin.HandlerFunc{
-	return func(c *gin.Context){
-		var userData models.UserRequest
-		if err := c.BindJSON(&userData); err != nil{
-			c.JSON(http.StatusBadRequest, models.ErrorResponse{Message: err.Error(), Response: ""})
-			return
-		}
-		_ , err := userData.AddUser(coll)
-
-		if err != nil{
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Message: err.Error(), Response: ""})
-			return
-		}
-		c.JSON(http.StatusOK, models.GeneralResponse{Message:"Successfully added user"})	
-	}
-}
-
-
 func GetUsersHandler(coll *mongo.Collection) gin.HandlerFunc{
 	return func(c *gin.Context){
 		users, err := models.GetUsers(coll)

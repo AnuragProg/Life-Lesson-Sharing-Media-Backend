@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -9,22 +10,61 @@ import (
 )
 
 
+// Initial request from user
 type UserRequest struct{
 	Username string `json:"username" bson:"username"`
 	Email string `json:"email" bson:"email"`
+	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo"`
 	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
+}
+
+// For Deciding whether requested user is admin or not
+// Will be saved on the db
+type UserIntermediate struct{
+	Username string `json:"username" bson:"username"`
+	Email string `json:"email" bson:"email"`
+	Password string `json:"password" bson:"password"`
+	Photo string `json:"photo,omitempty" bson:"photo"`
+	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
+	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
 
 type User struct{
 	ID string `json:"_id" bson:"_id"`
 	Username string `json:"username" bson:"username"`
 	Email string `json:"email" bson:"email"`
+	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo,omitempty"`
 	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
+	LastToken string `json:"token" bson:"token"`
+	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
 
-func (user *UserRequest) AddUser(coll *mongo.Collection) (*mongo.InsertOneResult, error){
+
+func (user *UserRequest)ToUserIntermediate(isAdmin bool)(*UserIntermediate){
+	return &UserIntermediate{
+		Username: user.Username,
+		Email: user.Email,
+		Password: user.Password,
+		Photo: user.Photo,
+		JoinedOn: user.JoinedOn,
+		IsAdmin: isAdmin,
+	}
+}
+
+
+func (user *UserIntermediate) AddUser(coll *mongo.Collection) (*mongo.InsertOneResult, error){
+
+	// checking if user already exists or not 
+	var u User
+	filter := bson.M{"email":user.Email}
+	result := coll.FindOne(context.TODO(), filter)
+	err := result.Decode(&u)
+	if err == nil{
+		return nil, errors.New("User already exists")
+	}	
+
 	return coll.InsertOne(context.TODO(), user)
 }
 
@@ -38,6 +78,7 @@ func (user *User) UpdateUser(coll *mongo.Collection) (*mongo.UpdateResult, error
 		"$set":bson.M{
 			"username": user.Username,
 			"email" : user.Email,
+			"password" :user.Password, 
 			"photo" : user.Photo,
 		},
 	}
