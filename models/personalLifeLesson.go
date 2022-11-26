@@ -10,12 +10,13 @@ import (
 
 /*
 Redundant Fields(Will be taking on controllers) :-
-1. userId
+1. userId (Will be replaced after authentication in controller)
 2. likes
 3. comments
 4. categoryId
 */
 type PersonalLifeLessonRequest struct {
+	UserId       string   `json:"userId" bson:"userId"`
 	Username     string   `json:"username" bson:"username"`
 	Title        string   `json:"title" bson:"title"`
 	Learning     string   `json:"learning" bson:"learning"`
@@ -43,17 +44,17 @@ func (pll *PersonalLifeLessonRequest) AddPll(coll *mongo.Collection)(*mongo.Inse
 	return coll.InsertOne(context.TODO(), pll)
 }
 
-
 /*
 Updates Single Personal Life Lesson post
 */
-func (pll *PersonalLifeLesson) UpdatePll(coll *mongo.Collection)(*mongo.UpdateResult, error){
+func (pll *PersonalLifeLesson) UpdatePll(userId string, coll *mongo.Collection)(*mongo.UpdateResult, error){
 	pllId, err := primitive.ObjectIDFromHex(pll.ID)
 	if err!=nil{
 		return nil, err
 	}
 	filter := bson.M{
 		"_id": pllId,
+		"userId": userId,
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -66,7 +67,6 @@ func (pll *PersonalLifeLesson) UpdatePll(coll *mongo.Collection)(*mongo.UpdateRe
 	}
 	return coll.UpdateOne(context.TODO(), filter, update)
 }
-
 
 /*
 Returns all Personal Life Lesson posts
@@ -84,7 +84,6 @@ func GetPlls(coll *mongo.Collection)([]PersonalLifeLesson, error){
 	return plls,err 
 }
 
-
 /*
 Returns @pllId corresponding Personal Life Lesson post
 */
@@ -101,4 +100,32 @@ func GetPll(pllId string, coll *mongo.Collection) (*PersonalLifeLesson, error){
 		return nil, err
 	}
 	return &pll, nil
+}
+
+func LikePlls(pllIds []string, userId string, pllColl *mongo.Collection){
+	pllObjectIds := make(map[string]primitive.ObjectID, len(pllIds))
+	for _, pllId := range pllIds{
+		id, err := primitive.ObjectIDFromHex(pllId)
+		if err != nil{
+			continue
+		}
+		pllObjectIds[pllId] = id
+	}
+
+	for _, id := range pllObjectIds{
+		go pllColl.UpdateOne(context.TODO(), bson.M{"_id":id}, bson.M{"$addToSet":bson.M{"likes":userId}})
+	}
+}
+func DislikePlls(pllIds []string, userId string, pllColl *mongo.Collection){
+	pllObjectIds := make(map[string]primitive.ObjectID, len(pllIds))
+	for _, pllId := range pllIds{
+		id, err := primitive.ObjectIDFromHex(pllId)
+		if err != nil{
+			continue
+		}
+		pllObjectIds[pllId] = id
+	}
+	for _, id := range pllObjectIds{
+		go pllColl.UpdateOne(context.TODO(), bson.M{"_id":id}, bson.M{"$pull":bson.M{"likes":userId}})
+	}
 }

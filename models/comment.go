@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type CommentRequest struct{
@@ -125,12 +125,12 @@ func deleteCommentFromPllCommentsTable(pllId, commentId string, coll *mongo.Coll
 	return err
 }
 
+
 func addCommentToPllCommentsTable(pllId, commentId string, coll *mongo.Collection) error{
 	id, err := primitive.ObjectIDFromHex(pllId)
 	if err != nil{
 		return err
 	}
-
 	filter := bson.M{"_id":id}
 	update := bson.M{
 		"$push":bson.M{
@@ -140,6 +140,7 @@ func addCommentToPllCommentsTable(pllId, commentId string, coll *mongo.Collectio
 	_, err = coll.UpdateOne(context.TODO(), filter, update)
 	return err
 }
+
 // Only for admin
 func DeleteComments(commentIds []string, coll *mongo.Collection) error{
 	var wg sync.WaitGroup

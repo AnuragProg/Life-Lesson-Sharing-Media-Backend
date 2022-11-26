@@ -22,6 +22,10 @@ note:
 */
 
 const COST = 5
+const(
+	USERIDKEY string = "UserId"
+)
+
 
 func GetBearerToken(c *gin.Context) (string, error){
 	tokenString := c.Request.Header.Get("Authorization")	
@@ -261,6 +265,7 @@ func UserAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 				c.Abort()
 				return
 			}
+			c.Set(USERIDKEY, user.ID)
 			c.Next()
 			return
 		}
@@ -335,6 +340,7 @@ func AdminAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 
 				// User is admin with correct credentials
 				// Let the user move to the next handler
+				c.Set(USERIDKEY, user.ID)
 				c.Next()
 				return
 			}

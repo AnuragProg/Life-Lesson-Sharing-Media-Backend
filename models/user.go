@@ -37,7 +37,7 @@ type User struct{
 	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo,omitempty"`
 	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
-	LastToken string `json:"token" bson:"token"`
+	LastToken string `json:"token,omitempty" bson:"token,omitempty"`
 	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
 
