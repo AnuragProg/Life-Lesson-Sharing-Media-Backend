@@ -68,6 +68,8 @@ func main(){
 		pll.GET("/pll", controllers.GetPllHandler(pllCollection))
 		pll.PATCH("/", controllers.UpdatePllHandler(pllCollection))
 		pll.POST("/", controllers.AddPllHandler(pllCollection))
+		pll.POST("/like", controllers.LikePllsHandler(pllCollection))
+		pll.POST("/dislike", controllers.DislikePllsHandler(pllCollection))
 	}
 
 	category := router.Group("/category")
