@@ -3,8 +3,8 @@ package controllers
 import(
 	"net/http"
 	"rest-api/models"
-	"go.mongodb.org/mongo-driver/mongo"	
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"	
 )
 
 func AddCategoryHandler(coll *mongo.Collection) gin.HandlerFunc{

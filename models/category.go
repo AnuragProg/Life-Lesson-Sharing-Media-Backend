@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -65,7 +66,7 @@ func GetCategory(categoryId string, coll *mongo.Collection)(*Category, error){
 	var category Category
 	err = result.Decode(&category)
 	if err!=nil{
-		return nil, err
+		return nil, errors.New("category does not exist") 
 	}
 	return &category, nil
 }

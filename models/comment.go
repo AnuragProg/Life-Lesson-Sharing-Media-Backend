@@ -1,34 +1,60 @@
 package models
 
 import (
-	"context"
+	"time"
 	"sync"
+	"errors"
+	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Request body from user when updating comment
+type CommentUpdateRequest struct{
+	ID string `json:"_id" bson:"_id"`
+	Comment string `json:"comment" bson:"comment"`
+}
+
+// Request body from user when adding new comment
 type CommentRequest struct{
+	PllId string `json:"pllId" bson:"pllId"`
+	Comment string `json:"comment" bson:"comment"`
+}
+
+// Internally to be used
+// Actual data that will be added to the db
+type CommentRequestIntermediate struct{
 	PllId string `json:"pllId" bson:"pllId"`
 	UserId string `json:"userId" bson:"userId"`
 	Username string `json:"username" bson:"username"`
 	Comment string `json:"comment" bson:"comment"`
-	CommentedOn uint32 `json:"commentedOn" bson:"commentedOn"`
+	CommentedOn int64 `json:"commentedOn" bson:"commentedOn"`
 }
 
-
+// Full data that is stored in db
 type Comment struct{
 	ID string `json:"_id" bson:"_id"`
 	PllId string `json:"pllId" bson:"pllId"`
 	UserId string `json:"userId" bson:"userId"`
 	Username string `json:"username" bson:"username"`
 	Comment string `json:"comment" bson:"comment"`
-	CommentedOn uint32 `json:"commentedOn" bson:"commentedOn"`
+	CommentedOn int64 `json:"commentedOn" bson:"commentedOn"`
 }
 
-func (comment *CommentRequest) AddComment(pllColl, commentColl *mongo.Collection)(*mongo.InsertOneResult, error){
+func (comment *CommentRequest)ToCommentRequestIntermediate(userId, username string) *CommentRequestIntermediate{
+	return &CommentRequestIntermediate{
+		PllId: comment.PllId,
+		UserId: userId,
+		Username: username,
+		Comment: comment.Comment,
+		CommentedOn: time.Now().Unix(),
+	}
+}
 
+
+func (comment *CommentRequestIntermediate) AddComment(pllColl, commentColl *mongo.Collection)(*mongo.InsertOneResult, error){
 	//Check if given pll exists
 	pllId, err := primitive.ObjectIDFromHex(comment.PllId)
 	if err != nil{
@@ -39,18 +65,20 @@ func (comment *CommentRequest) AddComment(pllColl, commentColl *mongo.Collection
 	result := pllColl.FindOne(context.TODO(), filter)
 	err = result.Decode(&pll)
 	if err != nil{
-		return nil, err
+		return nil, errors.New("no such personal life lesson post exist") 
 	}
 
+	// Inserting comment
 	commentInsertResult, err := commentColl.InsertOne(context.TODO(), comment)	
 	if err != nil{
 		return nil, err 
 	}
 	commentId := commentInsertResult.InsertedID.(primitive.ObjectID).Hex()
-	return nil, addCommentToPllCommentsTable(comment.PllId, commentId, pllColl)
+	return nil, addCommentToPllCommentsTable(pll.ID, commentId, pllColl)
 }
 
-func (comment *Comment) UpdateComment(coll *mongo.Collection)(*mongo.UpdateResult, error){
+
+func (comment *CommentUpdateRequest) UpdateComment(coll *mongo.Collection)(*mongo.UpdateResult, error){
 	id, err := primitive.ObjectIDFromHex(comment.ID)
 	if err!=nil{
 		return nil, err
@@ -58,13 +86,13 @@ func (comment *Comment) UpdateComment(coll *mongo.Collection)(*mongo.UpdateResul
 	filter := bson.M{ "_id" : id }
 	update := bson.M{
 		"$set": bson.M{
-			"username":comment.Username,
 			"comment" :comment.Comment,
-			"commentedOn":comment.CommentedOn,
+			"commentedOn":time.Now().Unix(),
 		},
 	}
 	return coll.UpdateOne(context.TODO(), filter, update)
 }
+
 
 func DeleteComment(commentId string, pllColl, commentColl *mongo.Collection) error{
 	id, err := primitive.ObjectIDFromHex(commentId)
@@ -90,7 +118,6 @@ func DeleteComment(commentId string, pllColl, commentColl *mongo.Collection) err
 }
 
 
-/* Experimental */
 func GetComments(commentIds []string, coll *mongo.Collection) []Comment{
 	comments := make([]Comment, 0)
 	for _, commentId := range commentIds{

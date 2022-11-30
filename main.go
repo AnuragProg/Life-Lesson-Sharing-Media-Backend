@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"rest-api/controllers"
 	"rest-api/middlewares"
-
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -54,22 +52,28 @@ func main(){
 
 	user := router.Group("/user")
 	{
-		user.POST("/signUp", middlewares.SignUpUserHandler(userCollection))
-		user.POST("/signIn", middlewares.LoginUserWithTokenHandler(userCollection))
-		user.POST("/signInWithPassword", middlewares.LoginUserWithPasswordHandler(userCollection))
+		// Without any middleware
+		user.POST("/signUp", controllers.SignUpUserHandler(userCollection))
+		user.POST("/signInWithPassword", controllers.LoginUserWithPasswordHandler(userCollection))
+
+		// Requires User middleware
+		user.POST("/signIn", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.LoginUserWithTokenHandler(userCollection))
+		user.PATCH("/", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.UpdateUserHandler(userCollection))
+		user.DELETE("/", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.DeleteUserHandler(userCollection))
+
+		// Only for admin
 		user.GET("/", middlewares.AdminAuthMiddlwareHandler(userCollection),controllers.GetUsersHandler(userCollection))
-		user.PATCH("/edit", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.UpdateUserHandler(userCollection))
-		user.DELETE("/", middlewares.UserAuthMiddlwareHandler(userCollection),controllers.DeleteUserHandler(userCollection, commentCollection))
 	}
 
 	pll := router.Group("/pll", middlewares.UserAuthMiddlwareHandler(userCollection))
 	{
 		pll.GET("/plls", controllers.GetPllsHandler(pllCollection))
 		pll.GET("/pll", controllers.GetPllHandler(pllCollection))
-		pll.PATCH("/", controllers.UpdatePllHandler(pllCollection))
-		pll.POST("/", controllers.AddPllHandler(pllCollection))
+		pll.PATCH("/", controllers.UpdatePllHandler(pllCollection, userCollection, categoryCollection))
+		pll.POST("/", controllers.AddPllHandler(pllCollection,userCollection, categoryCollection))
 		pll.POST("/like", controllers.LikePllsHandler(pllCollection))
 		pll.POST("/dislike", controllers.DislikePllsHandler(pllCollection))
+		pll.DELETE("/", controllers.DeletePllHandler(pllCollection))
 	}
 
 	category := router.Group("/category")
@@ -84,13 +88,10 @@ func main(){
 	comments := router.Group("/comment", middlewares.UserAuthMiddlwareHandler(userCollection))
 	{
 		comments.GET("/", controllers.GetCommentsHandler(commentCollection))
-		comments.POST("/", controllers.AddCommentHandler(pllCollection,commentCollection))
+		comments.POST("/", controllers.AddCommentHandler(pllCollection,commentCollection, userCollection))
 		comments.DELETE("/", controllers.DeleteCommentHandler(pllCollection,commentCollection))
 		comments.PATCH("/", controllers.UpdateCommentHandler(commentCollection))
 	}
 
-	port := 5000
-	addr := fmt.Sprintf("localhost:%v", port)
-
-	parentRouter.Run(addr)
+	parentRouter.Run(os.Getenv("BASE_URL"))
 }

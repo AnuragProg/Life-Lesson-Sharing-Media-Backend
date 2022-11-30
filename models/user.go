@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -10,15 +11,24 @@ import (
 )
 
 
+const COST int = 5
+
+// For update only
+type UserUpdateRequest struct{
+	Username string `json:"username" bson:"username"`
+	Password string `json:"password" bson:"password"`
+	Photo string `json:"photo,omitempty" bson:"photo"`
+}
+
 // Initial request from user
 type UserRequest struct{
 	Username string `json:"username" bson:"username"`
 	Email string `json:"email" bson:"email"`
 	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo"`
-	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
 }
 
+// *** Only for Signing Up ***
 // For Deciding whether requested user is admin or not
 // Will be saved on the db
 type UserIntermediate struct{
@@ -26,7 +36,8 @@ type UserIntermediate struct{
 	Email string `json:"email" bson:"email"`
 	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo"`
-	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
+	JoinedOn int64 `json:"joinedOn" bson:"joinedOn"`
+	LastToken string `json:"-" bson:"token,omitempty"`
 	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
 
@@ -36,26 +47,36 @@ type User struct{
 	Email string `json:"email" bson:"email"`
 	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo,omitempty"`
-	JoinedOn uint32 `json:"joinedOn" bson:"joinedOn"`
-	LastToken string `json:"token,omitempty" bson:"token,omitempty"`
+	JoinedOn int64 `json:"joinedOn" bson:"joinedOn"`
+	LastToken string `json:"-" bson:"token,omitempty"`
 	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
 
+func UpdateLastToken(email, token string, coll *mongo.Collection)(error){
+	filter := bson.M{"email": email}			
+	update := bson.M{"$set":bson.M{"token": token}}
+	_, err := coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil{
+		return errors.New("unable to update previous token")
+	}
+	return nil
+}
 
-func (user *UserRequest)ToUserIntermediate(isAdmin bool)(*UserIntermediate){
+
+func (user *UserRequest)ToUserIntermediate(isAdmin bool, token string)(*UserIntermediate){
 	return &UserIntermediate{
 		Username: user.Username,
 		Email: user.Email,
 		Password: user.Password,
 		Photo: user.Photo,
-		JoinedOn: user.JoinedOn,
+		JoinedOn: time.Now().Unix(),
 		IsAdmin: isAdmin,
+		LastToken: token,
 	}
 }
 
 
 func (user *UserIntermediate) AddUser(coll *mongo.Collection) (*mongo.InsertOneResult, error){
-
 	// checking if user already exists or not 
 	var u User
 	filter := bson.M{"email":user.Email}
@@ -68,8 +89,9 @@ func (user *UserIntermediate) AddUser(coll *mongo.Collection) (*mongo.InsertOneR
 	return coll.InsertOne(context.TODO(), user)
 }
 
-func (user *User) UpdateUser(coll *mongo.Collection) (*mongo.UpdateResult, error){
-	id, err:= primitive.ObjectIDFromHex(user.ID)
+
+func (user *UserUpdateRequest) UpdateUser(userId, hashedPassword, token string, coll *mongo.Collection) (*mongo.UpdateResult, error){
+	id, err:= primitive.ObjectIDFromHex(userId)
 	if err!=nil{
 		return nil, err
 	}
@@ -77,15 +99,15 @@ func (user *User) UpdateUser(coll *mongo.Collection) (*mongo.UpdateResult, error
 	update := bson.M{
 		"$set":bson.M{
 			"username": user.Username,
-			"email" : user.Email,
-			"password" :user.Password, 
+			"password" : hashedPassword,
 			"photo" : user.Photo,
+			"token": token,
 		},
 	}
 	return coll.UpdateOne(context.TODO(), filter, update)
 } 
 
-func DeleteUser(userId string, pllColl *mongo.Collection, commentColl *mongo.Collection) (*mongo.DeleteResult, error){
+func DeleteUser(userId string, pllColl *mongo.Collection) (*mongo.DeleteResult, error){
 	id , err:= primitive.ObjectIDFromHex(userId)
 	if err!=nil{
 		return nil, err
@@ -94,6 +116,8 @@ func DeleteUser(userId string, pllColl *mongo.Collection, commentColl *mongo.Col
 	return pllColl.DeleteOne(context.TODO(), filter)	
 }
 
+
+// Following functions are for admin only for now
 func GetUsers(coll *mongo.Collection) ([]User, error) {
 	var users []User = make([]User, 0)
 	cursor, err := coll.Find(context.TODO(), bson.D{})
