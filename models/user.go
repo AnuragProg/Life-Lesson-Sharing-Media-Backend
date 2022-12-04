@@ -45,7 +45,7 @@ type User struct{
 	ID string `json:"_id" bson:"_id"`
 	Username string `json:"username" bson:"username"`
 	Email string `json:"email" bson:"email"`
-	Password string `json:"password" bson:"password"`
+	Password string `json:"-" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo,omitempty"`
 	JoinedOn int64 `json:"joinedOn" bson:"joinedOn"`
 	LastToken string `json:"-" bson:"token,omitempty"`
