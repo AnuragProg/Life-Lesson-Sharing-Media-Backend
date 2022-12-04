@@ -1,10 +1,10 @@
 package controllers
 
-import(
+import (
 	"net/http"
 	"rest-api/models"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"	
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func AddCategoryHandler(coll *mongo.Collection) gin.HandlerFunc{
@@ -65,7 +65,7 @@ func GetCategoryHandler(coll *mongo.Collection) gin.HandlerFunc{
 			return
 		}
 		category, err := models.GetCategory(categoryId, coll)
-		if err != nil{
+		if err != nil{ 
 			c.JSON(http.StatusInternalServerError, models.GeneralResponse{Message: err.Error()})
 			return
 		}

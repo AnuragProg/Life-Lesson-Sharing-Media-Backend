@@ -19,6 +19,7 @@ func UserAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 		// Retrieving JWT token from request
 		tokenString, err := components.GetBearerToken(c)
 		if err != nil{
+			c.JSON(404, gin.H{"message":err.Error()})
 			c.Abort()
 			return
 		}
@@ -26,6 +27,7 @@ func UserAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 		// Retrieving JWT Secret for verifying JWT signature
 		secret, err := components.GetJWTSecret()
 		if err != nil{
+			c.JSON(404, gin.H{"message":err.Error()})
 			c.Abort()
 			return 
 		}
@@ -92,6 +94,7 @@ func AdminAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 		// Retrieving token from request
 		tokenString, err := components.GetBearerToken(c)
 		if err != nil{
+			c.JSON(404, gin.H{"message":err.Error()})
 			c.Abort()
 			return
 		}
@@ -99,6 +102,7 @@ func AdminAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 		// Retrieving JWT Secret for verifying JWT signature
 		secret, err := components.GetJWTSecret()
 		if err != nil{
+			c.JSON(404, gin.H{"message":err.Error()})
 			c.Abort()
 			return 
 		}
@@ -142,8 +146,6 @@ func AdminAuthMiddlwareHandler(coll *mongo.Collection) gin.HandlerFunc{
 
 			// Validating credentials of JWT token with credentails in db
 			if user.Email != email || user.Password != pass{
-				log.Println("Expected email", user.Email, " and got from token email", email)
-				log.Println("Expected password", user.Password, " and got from token email", pass)
 				c.JSON(http.StatusUnauthorized, gin.H{"message":"credentials not valid due to incorrect password"})
 				c.Abort()
 				return
