@@ -151,19 +151,45 @@ func DeleteCommentHandler(pllColl, commentColl *mongo.Collection)gin.HandlerFunc
 	}
 }
 
-func GetCommentsHandler(coll *mongo.Collection) gin.HandlerFunc{
+// func GetCommentsHandler(coll *mongo.Collection) gin.HandlerFunc{
+// 	return func(c *gin.Context){
+// 		var commentIds []string
+// 		err := c.BindJSON(&commentIds)
+// 		if err != nil{
+// 			c.JSON(404, gin.H{"message":err.Error()})
+// 			return
+// 		}
+// 		comments := models.GetComments(commentIds, coll)
+// 		c.JSON(http.StatusOK, comments)
+// 	}
+// }
+
+func GetCommentsHandler(pllColl, commentColl *mongo.Collection)gin.HandlerFunc{
 	return func(c *gin.Context){
-		var commentIds []string
-		err := c.BindJSON(&commentIds)
-		if err != nil{
-			c.JSON(404, gin.H{"message":err.Error()})
-			return
+
+		// Retreiving pll id from query
+		pllId := c.Query("id")
+		if pllId == ""{
+			c.JSON(http.StatusBadRequest, gin.H{"message":"unable to find personal life lesson id in query"})
+			c.Abort()
+			return 
 		}
-		comments := models.GetComments(commentIds, coll)
+
+
+		// Retreiving pll corresponding to pllid
+		pll, err := models.GetPll(pllId, pllColl)
+		if err != nil{
+			c.JSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+			c.Abort()
+			return 
+		}
+
+		// Extracting comments with associated comment id's slice
+		comments := models.GetComments(pll.Comments, commentColl)
+
 		c.JSON(http.StatusOK, comments)
 	}
 }
-
 
 // TODO Only for Admin (not to be implemented now)
 func DeleteCommentsHandler(coll *mongo.Collection) gin.HandlerFunc{

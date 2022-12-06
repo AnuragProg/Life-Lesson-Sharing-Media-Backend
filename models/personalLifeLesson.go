@@ -51,8 +51,8 @@ type PersonalLifeLesson struct {
 	RelatedStory string   `json:"relatedStory" bson:"relatedStory"`
 	CreatedOn    int64    `json:"createdOn" bson:"createdOn"`
 	CategoryId   string   `json:"categoryId" bson:"categoryId"`
-	Likes        []string `json:"likes,omitempty" bson:"likes"`
-	Comments     []string `json:"comments,omitempty" bson:"comments"`
+	Likes        []string `json:"-" bson:"likes"`
+	Comments     []string `json:"-" bson:"comments"`
 }
 
 func DeletePll(pllId string, coll *mongo.Collection) error{

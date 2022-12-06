@@ -87,7 +87,7 @@ func main(){
 
 	comments := router.Group("/comment", middlewares.UserAuthMiddlwareHandler(userCollection))
 	{
-		comments.GET("/", controllers.GetCommentsHandler(commentCollection))
+		comments.GET("/", controllers.GetCommentsHandler(pllCollection, commentCollection))
 		comments.POST("/", controllers.AddCommentHandler(pllCollection,commentCollection, userCollection))
 		comments.DELETE("/", controllers.DeleteCommentHandler(pllCollection,commentCollection))
 		comments.PATCH("/", controllers.UpdateCommentHandler(commentCollection))
