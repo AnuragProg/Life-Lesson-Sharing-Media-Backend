@@ -1,16 +1,18 @@
 package controllers
 
-import(
+import (
 	"context"
 	"errors"
 	"net/http"
 	"rest-api/components"
 	"rest-api/models"
-	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
+
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/golang-jwt/jwt/v4"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Everytime user opens the app
@@ -87,7 +89,7 @@ func LoginUserWithTokenHandler(coll *mongo.Collection)gin.HandlerFunc{
 				}
 
 				// Returning new token to user
-				c.JSON(http.StatusOK, gin.H{"token":tokenString})
+				c.JSON(http.StatusOK, gin.H{"token":tokenString, "userId": user.ID})
 				return
 			}
 		}
@@ -140,7 +142,7 @@ func SignUpUserHandler(coll *mongo.Collection) gin.HandlerFunc{
 
 		// Adding user to db and adding latest token
 		// Done after all conversions to make user user is ready to be added to db
-		_, err = user.ToUserIntermediate(isAdmin, token).AddUser(coll)
+		result, err := user.ToUserIntermediate(isAdmin, token).AddUser(coll)
 		if err != nil{
 			c.JSON(404, gin.H{"message":err.Error()})
 			c.Abort()
@@ -148,7 +150,7 @@ func SignUpUserHandler(coll *mongo.Collection) gin.HandlerFunc{
 		}
 
 		// Returning the token
-		c.JSON(http.StatusOK, gin.H{"token":token})
+		c.JSON(http.StatusOK, gin.H{"token":token, "userId":result.InsertedID.(primitive.ObjectID).Hex()})
 	}
 }
 
@@ -205,6 +207,6 @@ func LoginUserWithPasswordHandler(coll *mongo.Collection)gin.HandlerFunc{
 		// Updating previous token
 		models.UpdateLastToken(user.Email, token, coll)
 
-		c.JSON(http.StatusOK, gin.H{"token":token})
+		c.JSON(http.StatusOK, gin.H{"token":token, "userId":user.ID})
 	}
 }
