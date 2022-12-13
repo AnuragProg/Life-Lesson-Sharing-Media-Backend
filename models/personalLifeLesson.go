@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /*
@@ -38,7 +39,7 @@ type PersonalLifeLessonRequestIntermediate struct {
 	Title        string   `json:"title" bson:"title"`
 	Learning     string   `json:"learning" bson:"learning"`
 	RelatedStory string   `json:"relatedStory" bson:"relatedStory"`
-	CreatedOn    int64   `json:"createdOn" bson:"createdOn"`
+	CreatedOn    time.Time   `json:"createdOn" bson:"createdOn"` // int64
 	CategoryId   string   `json:"categoryId" bson:"categoryId"`
 }
 
@@ -49,10 +50,10 @@ type PersonalLifeLesson struct {
 	Title        string   `json:"title" bson:"title"`
 	Learning     string   `json:"learning" bson:"learning"`
 	RelatedStory string   `json:"relatedStory" bson:"relatedStory"`
-	CreatedOn    int64    `json:"createdOn" bson:"createdOn"`
+	CreatedOn    time.Time `json:"createdOn" bson:"createdOn"`
 	CategoryId   string   `json:"categoryId" bson:"categoryId"`
 	Likes        []string `json:"likes" bson:"likes"`
-	Comments     []string `json:"-" bson:"comments"`
+	Comments     []string `json:"comments" bson:"comments"`
 }
 
 func DeletePll(pllId string, coll *mongo.Collection) error{
@@ -78,7 +79,8 @@ func (pll *PersonalLifeLessonRequest)ToPersonalLifeLessonRequestIntermediate(use
 		Title: pll.Title,
 		Learning: pll.Learning,
 		RelatedStory: pll.RelatedStory,
-		CreatedOn: time.Now().Unix(),
+		// CreatedOn: time.Now().Unix(),
+		CreatedOn: time.Now(),
 	}
 }
 
@@ -118,8 +120,9 @@ Returns all Personal Life Lesson posts
 func GetPlls(coll *mongo.Collection)([]PersonalLifeLesson, error){
 	plls := make([]PersonalLifeLesson, 0)
 
+	opts := options.Find().SetSort(bson.M{"_id": -1})
 	filter := bson.M{}
-	cursor, err := coll.Find(context.TODO(), filter)
+	cursor, err := coll.Find(context.TODO(), filter, opts)
 	if err != nil{
 		return plls , nil
 	}
