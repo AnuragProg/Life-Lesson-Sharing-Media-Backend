@@ -30,7 +30,7 @@ type CommentRequestIntermediate struct{
 	UserId string `json:"userId" bson:"userId"`
 	Username string `json:"username" bson:"username"`
 	Comment string `json:"comment" bson:"comment"`
-	CommentedOn int64 `json:"commentedOn" bson:"commentedOn"`
+	CommentedOn time.Time `json:"commentedOn" bson:"commentedOn"`
 }
 
 // Full data that is stored in db
@@ -40,7 +40,7 @@ type Comment struct{
 	UserId string `json:"userId" bson:"userId"`
 	Username string `json:"username" bson:"username"`
 	Comment string `json:"comment" bson:"comment"`
-	CommentedOn int64 `json:"commentedOn" bson:"commentedOn"`
+	CommentedOn time.Time `json:"commentedOn" bson:"commentedOn"`
 }
 
 func (comment *CommentRequest)ToCommentRequestIntermediate(userId, username string) *CommentRequestIntermediate{
@@ -49,7 +49,7 @@ func (comment *CommentRequest)ToCommentRequestIntermediate(userId, username stri
 		UserId: userId,
 		Username: username,
 		Comment: comment.Comment,
-		CommentedOn: time.Now().Unix(),
+		CommentedOn: time.Now(),
 	}
 }
 

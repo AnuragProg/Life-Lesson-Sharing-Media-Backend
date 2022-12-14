@@ -36,7 +36,7 @@ type UserIntermediate struct{
 	Email string `json:"email" bson:"email"`
 	Password string `json:"password" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo"`
-	JoinedOn int64 `json:"joinedOn" bson:"joinedOn"`
+	JoinedOn time.Time `json:"joinedOn" bson:"joinedOn"`
 	LastToken string `json:"-" bson:"token,omitempty"`
 	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
@@ -47,7 +47,7 @@ type User struct{
 	Email string `json:"email" bson:"email"`
 	Password string `json:"-" bson:"password"`
 	Photo string `json:"photo,omitempty" bson:"photo,omitempty"`
-	JoinedOn int64 `json:"joinedOn" bson:"joinedOn"`
+	JoinedOn time.Time `json:"joinedOn" bson:"joinedOn"`
 	LastToken string `json:"-" bson:"token,omitempty"`
 	IsAdmin bool `json:"isAdmin" bson:"isAdmin"`
 }
@@ -69,7 +69,7 @@ func (user *UserRequest)ToUserIntermediate(isAdmin bool, token string)(*UserInte
 		Email: user.Email,
 		Password: user.Password,
 		Photo: user.Photo,
-		JoinedOn: time.Now().Unix(),
+		JoinedOn: time.Now(),
 		IsAdmin: isAdmin,
 		LastToken: token,
 	}

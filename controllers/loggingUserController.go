@@ -50,7 +50,9 @@ func LoginUserWithTokenHandler(coll *mongo.Collection)gin.HandlerFunc{
 		}
 
 		// Checking if Parsed JWT token is valid
-		if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok{
+		// token.Valid && // to omit whether the token has expired or not
+		// because it may have been expired
+		if claims, ok := token.Claims.(jwt.MapClaims); ok{
 			email, password, admin:= claims["email"], claims["password"], claims["admin"].(bool)
 
 			// Finding user with credentials in JWT token
