@@ -12,38 +12,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-
-func main(){
+func setupRouter(db *mongo.Database) *gin.Engine{
+	gin.SetMode(gin.ReleaseMode)
 	parentRouter := gin.Default()
 	
 	router := parentRouter.Group("/v1")
-
-	if err := godotenv.Load(); err!=nil{
-		log.Fatal("Cannot find .env file!")
-	}
-	var uri string
-	if uri = os.Getenv("MONGO_URI"); uri == ""{
-		log.Fatal("Cannot find MONGO_URI in .env file")
-	}
-	
-	log.Println("Connecting to DB...")
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-	log.Println("Connected to DB")
-
-	// Disconnecting from the db
-	defer func(){
-		log.Println("Disconnecting from DB...")
-		if err = client.Disconnect(context.TODO()); err != nil{
-			log.Fatal(err.Error())
-		}
-		log.Println("Disconnected DB")
-	}()
-
-	db := client.Database("personalLifeLessons_db")
-
-	if err != nil{
-		log.Fatal("Cannot connect to DB!")
-	}
 
 	userCollection := db.Collection("Users")
 	pllCollection := db.Collection("Pll")	
@@ -93,5 +66,46 @@ func main(){
 		comments.PATCH("/", controllers.UpdateCommentHandler(commentCollection))
 	}
 
-	parentRouter.Run(os.Getenv("BASE_URL"))
+	return parentRouter
+}
+
+func ConnectToDatabase(client *mongo.Client)*mongo.Database{
+	db := client.Database("personalLifeLessons_db")
+	return db
+}
+
+func ConnectToMongo() *mongo.Client{
+	var uri string
+	if uri = os.Getenv("MONGO_URI"); uri == ""{
+		log.Fatal("Cannot find MONGO_URI in .env file")
+	}
+	
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	if err != nil{
+		log.Fatal("Cannot connect to Mongo!")
+	}
+
+	return client
+}
+
+func DisconnectFromMongo(client *mongo.Client){
+	if err := client.Disconnect(context.TODO()); err != nil{
+		log.Fatal(err.Error())
+	}
+}
+
+func LoadEnv(){
+	if err := godotenv.Load(); err!=nil{
+		log.Fatal("Cannot find .env file!")
+	}
+}
+
+func main(){
+	LoadEnv()
+	client := ConnectToMongo()
+	defer DisconnectFromMongo(client)
+	db := ConnectToDatabase(client)
+
+	router := setupRouter(db)
+	router.Run(os.Getenv("BASE_URL"))
 }
