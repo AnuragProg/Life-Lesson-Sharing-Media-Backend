@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Request body from user when updating comment
@@ -118,23 +119,39 @@ func DeleteComment(commentId string, pllColl, commentColl *mongo.Collection) err
 }
 
 
+
 func GetComments(commentIds []string, coll *mongo.Collection) []Comment{
-	comments := make([]Comment, 0)
+	comments := make([]Comment, len(commentIds))
+	ids := make([]primitive.ObjectID, len(commentIds))
+
 	for _, commentId := range commentIds{
-		id, err := primitive.ObjectIDFromHex(commentId)
-		if err != nil{
-			continue
-		}
-		filter := bson.M{"_id":id}
-		result := coll.FindOne(context.TODO(), filter)
-		var comment Comment
-		err = result.Decode(&comment)
-		if err==nil{
-			comments = append(comments, comment)
-		}
+		id, _ := primitive.ObjectIDFromHex(commentId)
+		ids = append(ids, id)
 	}
+	opts := options.Find().SetSort(bson.M{"_id":-1})
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	result, _ := coll.Find(context.TODO(), filter, opts)
+	_ = result.All(context.TODO(), &comments)
 	return comments
 }
+
+// func GetComments(commentIds []string, coll *mongo.Collection) []Comment{
+// 	comments := make([]Comment, 0)
+// 	for _, commentId := range commentIds{
+// 		id, err := primitive.ObjectIDFromHex(commentId)
+// 		if err != nil{
+// 			continue
+// 		}
+// 		filter := bson.M{"_id":id}
+// 		result := coll.FindOne(context.TODO(), filter)
+// 		var comment Comment
+// 		err = result.Decode(&comment)
+// 		if err==nil{
+// 			comments = append(comments, comment)
+// 		}
+// 	}
+// 	return comments
+// }
 
 func deleteCommentFromPllCommentsTable(pllId, commentId string, coll *mongo.Collection) error{
 	id, err := primitive.ObjectIDFromHex(pllId)

@@ -96,13 +96,23 @@ func (user *UserUpdateRequest) UpdateUser(userId, hashedPassword, token string, 
 		return nil, err
 	}
 	filter := bson.D{{Key: "_id",Value: id}}
-	update := bson.M{
-		"$set":bson.M{
-			"username": user.Username,
-			"password" : hashedPassword,
-			"photo" : user.Photo,
-			"token": token,
-		},
+	var update bson.M
+	if hashedPassword == "" || token == ""{
+		update = bson.M{
+			"$set":bson.M{
+				"username": user.Username,
+				"photo" : user.Photo,
+			},
+		}
+	}else{
+		update = bson.M{
+			"$set":bson.M{
+				"username": user.Username,
+				"password" : hashedPassword,
+				"photo" : user.Photo,
+				"token": token,
+			},
+		}
 	}
 	return coll.UpdateOne(context.TODO(), filter, update)
 } 

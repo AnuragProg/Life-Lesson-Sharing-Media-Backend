@@ -13,7 +13,7 @@ import (
 )
 
 func setupRouter(db *mongo.Database) *gin.Engine{
-	gin.SetMode(gin.ReleaseMode)
+	// gin.SetMode(gin.ReleaseMode)
 	parentRouter := gin.Default()
 	
 	router := parentRouter.Group("/v1")

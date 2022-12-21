@@ -25,6 +25,33 @@ func GetUsersHandler(coll *mongo.Collection) gin.HandlerFunc{
 	}
 }
 
+func GetUserHandler(coll *mongo.Collection) gin.HandlerFunc{
+	return func(c *gin.Context){
+		userId := c.Query("id")
+		if userId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "provide user id"})
+			c.Abort()
+			return
+		}
+
+		requesterUserId := c.GetString(components.USERIDKEY)
+		if requesterUserId != userId{
+			c.JSON(http.StatusUnauthorized, gin.H{"message":"not authorized to request other user's data"})
+			c.Abort()
+			return
+		}
+
+		user, err := models.GetUserById(userId, coll)
+
+		if err != nil{
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+		
+		c.JSON(http.StatusOK, user)
+	}
+}
 
 func UpdateUserHandler(coll *mongo.Collection) gin.HandlerFunc{
 	return func(c *gin.Context){
@@ -62,20 +89,27 @@ func UpdateUserHandler(coll *mongo.Collection) gin.HandlerFunc{
 			return
 		}
 
-		// Generating hashed password
-		hashedPassword,err:= bcrypt.GenerateFromPassword([]byte(user.Password), models.COST)
-		if err != nil{
-			c.JSON(http.StatusBadRequest, gin.H{"message":err.Error()})
-			c.Abort()
-			return
-		}
 
-		// Generating new token with updated email and password
-		token, err := components.GenerateJWTToken(user.IsAdmin, user.Email, string(hashedPassword))
-		if err != nil{
-			c.JSON(http.StatusBadRequest, gin.H{"message":err.Error()})
-			c.Abort()
-			return
+
+		hashedPassword := []byte("")
+		token := ""
+
+		if userData.Password != ""{
+			// Generating hashed password
+			hashedPassword, err = bcrypt.GenerateFromPassword([]byte(user.Password), models.COST)
+			if err != nil{
+				c.JSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+				c.Abort()
+				return
+			}
+
+			// Generating new token with updated email and password
+			token, err = components.GenerateJWTToken(user.IsAdmin, user.Email, string(hashedPassword))
+			if err != nil{
+				c.JSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+				c.Abort()
+				return
+			}
 		}
 
 		// Updating user and last token
@@ -86,6 +120,8 @@ func UpdateUserHandler(coll *mongo.Collection) gin.HandlerFunc{
 			return
 		}
 
+		// Returns new token on updating only password
+		// Returns null token on updating username
 		c.JSON(http.StatusOK, gin.H{"token":token})
 	}
 }
