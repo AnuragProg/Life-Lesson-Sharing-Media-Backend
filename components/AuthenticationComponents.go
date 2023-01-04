@@ -35,11 +35,11 @@ func GetBearerToken(c *gin.Context) (string, error){
 
 // Retreives JWT Secret from environment variable
 func GetJWTSecret() ([]byte, error){
-	token := os.Getenv("JWT_SECRET")
-	if token == ""{
+	secret := os.Getenv("JWT_SECRET")
+	if secret == ""{
 		return []byte(""), errors.New("no jwt secret found")
 	}
-	return []byte(token), nil
+	return []byte(secret), nil
 }
 
 
